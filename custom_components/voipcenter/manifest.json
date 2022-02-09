@@ -1,0 +1,9 @@
+{
+  "version": "1.0.0",
+  "domain": "voipcenter",
+  "name": "Voipcenter",
+  "documentation": "https://github.com/bertouttier/voipcenter-hacs",
+  "issue_tracker": "https://github.com/bertouttier/voipcenter-hacs/issues",
+  "codeowners": ["@bertouttier"],
+  "config_flow": true
+}

@@ -1,0 +1,18 @@
+{
+  "title": "Voipcenter",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Voeg je voipcenter account toe",
+        "description": "Geef je Voipcenter API gegevens in",
+        "data": {
+          "api_id": "API ID",
+          "api_key": "API Key",
+          "klantnummer": "Klantnummer",
+          "password": "Paswoord",
+          "ws_username": "Websocket gebruikersnaam"
+        }
+      }
+    }
+  }
+}

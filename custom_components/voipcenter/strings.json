@@ -1,0 +1,18 @@
+{
+  "title": "Voipcenter",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Add your voipcenter account",
+        "description": "Provide your Voipcenter API credentials",
+        "data": {
+          "api_id": "API ID",
+          "api_key": "API Key",
+          "klantnummer": "Klantnummer",
+          "password": "Password",
+          "ws_username": "Websocket username"
+        }
+      }
+    }
+  }
+}
