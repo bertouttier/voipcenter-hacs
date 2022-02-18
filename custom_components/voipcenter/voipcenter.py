@@ -42,11 +42,14 @@ class VoipcenterApi:
             _LOGGER.warning("No websocket username configured, cannot connect")
             return
 
-        credentials = await self.get_ws_pass(self._ws_username)
-        _LOGGER.debug(credentials)
-
-        if credentials is None:
+        try:
+            credentials = await self.get_ws_pass(self._ws_username)
+        except:
             _LOGGER.error("No credentials!")
+            return
+
+        if ("username" not in credentials) or ("wskey" not in credentials):
+            _LOGGER.error(credentials)
             return
 
         # connect event callback
@@ -116,11 +119,7 @@ class VoipcenterApi:
         values['pass'] = self.generate_dig(values)
 
         r = await self._session.get(url, params=values)
-        try:
-            return await r.json(content_type='text/json charset=utf-8')
-        except json.JSONDecodeError as e:
-            _LOGGER.error('JSON decode error %s (%s, %s)', r.text, e.errno, e.strerror)
-            return None
+        return await r.json(content_type='text/json charset=utf-8')
 
     async def activate_fi(self, id, activate):
         url = VOIPCENTER_API_ENDPOINT + 'update.php'
@@ -139,12 +138,8 @@ class VoipcenterApi:
         values['pass'] = self.generate_dig(values)
 
         r = await self._session.get(url, params=values)
-        try:
-            d = await r.json(content_type='text/json charset=utf-8')
-            return d['body']['status'] == '1'
-        except json.JSONDecodeError as e:
-            _LOGGER.error("JSON decode error %s (%s, %s)", r.text, e.errno, e.strerror)
-            return False
+        d = await r.json(content_type='text/json charset=utf-8')
+        return d['body']['status'] == '1'
 
     async def get_ws_pass(self, ws_username):
         url = VOIPCENTER_API_ENDPOINT + 'get.php'
@@ -162,11 +157,7 @@ class VoipcenterApi:
         values['pass'] = self.generate_dig(values)
 
         r = await self._session.post(url, data=values)
-        try:
-            return await r.json(content_type='text/json charset=utf-8')
-        except json.JSONDecodeError as e:
-            _LOGGER.error('JSON decode error %s (%s, %s)', r.text, e.errno, e.strerror)
-            return None
+        return await r.json(content_type='text/json charset=utf-8')
 
     def get_device_info(self):
         return {

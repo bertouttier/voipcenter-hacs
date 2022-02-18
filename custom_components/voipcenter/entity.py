@@ -47,27 +47,36 @@ class VoipcenterSwitch(ToggleEntity):
     async def async_turn_on(self, **kwargs: Any) -> None:
         """Turn the function indicator on."""
         _LOGGER.info('Turning on FI %s (%s)', self._attr_name, self._id)
-        if (await self._api.activate_fi(self._id, True)) == False:
-            _LOGGER.error('Could not turn on FI %s (%s)', self._attr_name, self._id)
+        try:
+            status = await self._api.activate_fi(self._id, True)
+            if not status:
+                _LOGGER.error('Could not turn on FI %s (%s)', self._attr_name, self._id)
+        except:
+            _LOGGER.error('Failed to turn on FI %s (%s)', self._attr_name, self._id)
 
     async def async_turn_off(self, **kwargs: Any) -> None:
         """Turn the function indicator off."""
         _LOGGER.info('Turning off FI %s (%s)', self._attr_name, self._id)
-        if (await self._api.activate_fi(self._id, False)) == False:
-            _LOGGER.error('Could not turn off FI %s (%s)', self._attr_name, self._id)
+        try:
+            status = await self._api.activate_fi(self._id, False)
+            if not status:
+                _LOGGER.error('Could not turn off FI %s (%s)', self._attr_name, self._id)
+        except:
+            _LOGGER.error('Failed to turn off FI %s (%s)', self._attr_name, self._id)
 
     async def async_update(self):
         """Update function indicator state."""
         _LOGGER.debug('Getting state for function indicator %s (%s)', self._attr_name, self._id)
-        r = await self._api.get_fi(self._id)
-        if r == None:
+        try:
+            r = await self._api.get_fi(self._id)
+            if "actief" in r:
+                actief = r['actief']
+                _LOGGER.debug('Actief = %s', actief)
+                self._state = STATE_ON if actief == '1' else STATE_OFF
+            else:
+                _LOGGER.error('Unexpected response')
+                _LOGGER.debug(r)
+                self._state = STATE_UNKNOWN
+        except:
             _LOGGER.debug('No response received')
-            self._state = STATE_UNKNOWN
-        elif "actief" in r:
-            actief = r['actief']
-            _LOGGER.debug('Actief = %s', actief)
-            self._state = STATE_ON if actief == '1' else STATE_OFF
-        else:
-            _LOGGER.error('Unexpected response')
-            _LOGGER.debug(r)
             self._state = STATE_UNKNOWN
