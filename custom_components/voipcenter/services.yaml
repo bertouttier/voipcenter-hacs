@@ -1,0 +1,54 @@
+start_call:
+  fields:
+    sip_account_id:
+      required: true
+      example: 471
+      selector:
+        number:
+          min: 1
+          max: 999999999
+          mode: box
+    destination:
+      required: true
+      example: "0470123456"
+      selector:
+        text:
+    config_entry_id:
+      selector:
+        config_entry:
+          integration: voipcenter
+
+end_call:
+  fields:
+    conversation_id:
+      required: true
+      example: 2719
+      selector:
+        number:
+          min: 1
+          max: 999999999999
+          mode: box
+    config_entry_id:
+      selector:
+        config_entry:
+          integration: voipcenter
+
+transfer_call:
+  fields:
+    conversation_id:
+      required: true
+      example: 2719
+      selector:
+        number:
+          min: 1
+          max: 999999999999
+          mode: box
+    destination:
+      required: true
+      example: "6"
+      selector:
+        text:
+    config_entry_id:
+      selector:
+        config_entry:
+          integration: voipcenter

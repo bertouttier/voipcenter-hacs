@@ -1,16 +1,157 @@
 {
-  "title": "Voipcenter",
   "config": {
     "step": {
       "user": {
-        "title": "Add your voipcenter account",
-        "description": "Provide your Voipcenter API credentials",
+        "description": "Enter the API user of your VoipCenter (PBXonline) account (created under API users in the admin interface).",
         "data": {
-          "api_id": "API ID",
-          "api_key": "API Key",
-          "klantnummer": "Klantnummer",
-          "password": "Password",
-          "ws_username": "Websocket username"
+          "username": "API username",
+          "password": "API password"
+        }
+      },
+      "websocket": {
+        "title": "Realtime call info",
+        "description": "Optionally connect to the VoipCenter websocket to receive call notifications instantly. The username and key are pre-filled from the first websocket user (\"Websockets\" module in the \"Config\" menu). Leave the username empty to skip.",
+        "data": {
+          "ws_url": "Websocket server URL",
+          "ws_username": "Websocket username",
+          "ws_key": "Websocket key"
+        }
+      },
+      "reauth_confirm": {
+        "title": "Re-authenticate",
+        "description": "The API password for {username} was rejected. Enter a new one.",
+        "data": {
+          "password": "API password"
+        }
+      },
+      "reauth_api_user": {
+        "title": "Upgrade to APIv2",
+        "description": "Version 2 of this integration uses the VoipCenter APIv2. Enter the API user to use for {title} (created under API users in the admin interface).",
+        "data": {
+          "username": "API username",
+          "password": "API password"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Failed to connect",
+      "invalid_auth": "Invalid authentication",
+      "unknown": "Unexpected error"
+    },
+    "abort": {
+      "already_configured": "Account is already configured",
+      "reauth_successful": "Re-authentication was successful"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Realtime call info",
+        "description": "Websocket settings for realtime call notifications. Leave the username empty to disable.",
+        "data": {
+          "ws_url": "Websocket server URL",
+          "ws_username": "Websocket username",
+          "ws_key": "Websocket key"
+        }
+      }
+    }
+  },
+  "entity": {
+    "binary_sensor": {
+      "in_call": {
+        "name": "In call"
+      },
+      "websocket": {
+        "name": "Websocket"
+      },
+      "registered": {
+        "name": "Registered"
+      },
+      "presence": {
+        "name": "Available"
+      }
+    },
+    "sensor": {
+      "ongoing_calls": {
+        "name": "Ongoing calls"
+      },
+      "last_call_event": {
+        "name": "Last call event"
+      },
+      "call_state": {
+        "name": "Call state",
+        "state": {
+          "idle": "Idle",
+          "calling": "Calling",
+          "ringing": "Ringing"
+        }
+      },
+      "voicemail_messages": {
+        "name": "{name} voicemail messages"
+      }
+    },
+    "switch": {
+      "function_indicator": {
+        "name": "{name}"
+      }
+    }
+  },
+  "exceptions": {
+    "no_config_entry": {
+      "message": "No loaded VoipCenter account found."
+    },
+    "multiple_config_entries": {
+      "message": "Multiple VoipCenter accounts are loaded; specify config_entry_id."
+    }
+  },
+  "services": {
+    "start_call": {
+      "name": "Start call",
+      "description": "Click-to-dial: rings the SIP account first and connects it to the destination once answered.",
+      "fields": {
+        "sip_account_id": {
+          "name": "SIP account ID",
+          "description": "ID of the SIP account that rings first (see the id attribute of its Call state sensor)."
+        },
+        "destination": {
+          "name": "Destination",
+          "description": "Phone number to call."
+        },
+        "config_entry_id": {
+          "name": "Account",
+          "description": "VoipCenter account to use; only needed with multiple accounts."
+        }
+      }
+    },
+    "end_call": {
+      "name": "End call",
+      "description": "Hangs up an ongoing conversation.",
+      "fields": {
+        "conversation_id": {
+          "name": "Conversation ID",
+          "description": "ID of the ongoing conversation (see the Ongoing calls sensor)."
+        },
+        "config_entry_id": {
+          "name": "Account",
+          "description": "VoipCenter account to use; only needed with multiple accounts."
+        }
+      }
+    },
+    "transfer_call": {
+      "name": "Transfer call",
+      "description": "Transfers an ongoing conversation to another extension.",
+      "fields": {
+        "conversation_id": {
+          "name": "Conversation ID",
+          "description": "ID of the ongoing conversation (see the Ongoing calls sensor)."
+        },
+        "destination": {
+          "name": "Destination",
+          "description": "Extension to transfer the call to."
+        },
+        "config_entry_id": {
+          "name": "Account",
+          "description": "VoipCenter account to use; only needed with multiple accounts."
         }
       }
     }

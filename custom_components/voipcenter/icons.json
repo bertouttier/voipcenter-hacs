@@ -1,0 +1,55 @@
+{
+  "entity": {
+    "binary_sensor": {
+      "in_call": {
+        "default": "mdi:phone-hangup",
+        "state": {
+          "on": "mdi:phone-in-talk"
+        }
+      },
+      "presence": {
+        "default": "mdi:account-off",
+        "state": {
+          "on": "mdi:account-check"
+        }
+      }
+    },
+    "sensor": {
+      "ongoing_calls": {
+        "default": "mdi:phone-in-talk"
+      },
+      "last_call_event": {
+        "default": "mdi:phone-ring"
+      },
+      "call_state": {
+        "default": "mdi:phone",
+        "state": {
+          "calling": "mdi:phone-outgoing",
+          "ringing": "mdi:phone-ring"
+        }
+      },
+      "voicemail_messages": {
+        "default": "mdi:voicemail"
+      }
+    },
+    "switch": {
+      "function_indicator": {
+        "default": "mdi:toggle-switch-variant-off",
+        "state": {
+          "on": "mdi:toggle-switch-variant"
+        }
+      }
+    }
+  },
+  "services": {
+    "start_call": {
+      "service": "mdi:phone-outgoing"
+    },
+    "end_call": {
+      "service": "mdi:phone-hangup"
+    },
+    "transfer_call": {
+      "service": "mdi:phone-forward"
+    }
+  }
+}

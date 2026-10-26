@@ -1,16 +1,157 @@
 {
-  "title": "Voipcenter",
   "config": {
     "step": {
       "user": {
-        "title": "Voeg je voipcenter account toe",
-        "description": "Geef je Voipcenter API gegevens in",
+        "description": "Geef de API-gebruiker van je VoipCenter (PBXonline) account in (aangemaakt onder API-gebruikers in de beheerinterface).",
         "data": {
-          "api_id": "API ID",
-          "api_key": "API Key",
-          "klantnummer": "Klantnummer",
-          "password": "Paswoord",
-          "ws_username": "Websocket gebruikersnaam"
+          "username": "API-gebruikersnaam",
+          "password": "API-wachtwoord"
+        }
+      },
+      "websocket": {
+        "title": "Realtime gespreksinfo",
+        "description": "Maak optioneel verbinding met de VoipCenter websocket om gespreksmeldingen meteen te ontvangen. De gebruikersnaam en sleutel worden ingevuld vanuit de eerste websocketgebruiker (module \"Websockets\" in het menu \"Config\"). Laat de gebruikersnaam leeg om over te slaan.",
+        "data": {
+          "ws_url": "URL van de websocketserver",
+          "ws_username": "Websocket-gebruikersnaam",
+          "ws_key": "Websocket-sleutel"
+        }
+      },
+      "reauth_confirm": {
+        "title": "Opnieuw aanmelden",
+        "description": "Het API-wachtwoord voor {username} werd geweigerd. Geef een nieuw wachtwoord in.",
+        "data": {
+          "password": "API-wachtwoord"
+        }
+      },
+      "reauth_api_user": {
+        "title": "Upgraden naar APIv2",
+        "description": "Versie 2 van deze integratie gebruikt de VoipCenter APIv2. Geef de API-gebruiker in voor {title} (aangemaakt onder API-gebruikers in de beheerinterface).",
+        "data": {
+          "username": "API-gebruikersnaam",
+          "password": "API-wachtwoord"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Kan geen verbinding maken",
+      "invalid_auth": "Ongeldige aanmeldgegevens",
+      "unknown": "Onverwachte fout"
+    },
+    "abort": {
+      "already_configured": "Account is al geconfigureerd",
+      "reauth_successful": "Opnieuw aanmelden is gelukt"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Realtime gespreksinfo",
+        "description": "Websocketinstellingen voor realtime gespreksmeldingen. Laat de gebruikersnaam leeg om uit te schakelen.",
+        "data": {
+          "ws_url": "URL van de websocketserver",
+          "ws_username": "Websocket-gebruikersnaam",
+          "ws_key": "Websocket-sleutel"
+        }
+      }
+    }
+  },
+  "entity": {
+    "binary_sensor": {
+      "in_call": {
+        "name": "In gesprek"
+      },
+      "websocket": {
+        "name": "Websocket"
+      },
+      "registered": {
+        "name": "Geregistreerd"
+      },
+      "presence": {
+        "name": "Beschikbaar"
+      }
+    },
+    "sensor": {
+      "ongoing_calls": {
+        "name": "Lopende gesprekken"
+      },
+      "last_call_event": {
+        "name": "Laatste gespreksmelding"
+      },
+      "call_state": {
+        "name": "Gespreksstatus",
+        "state": {
+          "idle": "Vrij",
+          "calling": "In gesprek",
+          "ringing": "Gaat over"
+        }
+      },
+      "voicemail_messages": {
+        "name": "{name} voicemailberichten"
+      }
+    },
+    "switch": {
+      "function_indicator": {
+        "name": "{name}"
+      }
+    }
+  },
+  "exceptions": {
+    "no_config_entry": {
+      "message": "Geen geladen VoipCenter account gevonden."
+    },
+    "multiple_config_entries": {
+      "message": "Er zijn meerdere VoipCenter accounts geladen; geef config_entry_id op."
+    }
+  },
+  "services": {
+    "start_call": {
+      "name": "Gesprek starten",
+      "description": "Click-to-dial: laat eerst het SIP-account rinkelen en verbindt na opnemen met de bestemming.",
+      "fields": {
+        "sip_account_id": {
+          "name": "SIP-account ID",
+          "description": "ID van het SIP-account dat eerst rinkelt (zie het id-attribuut van de sensor Gespreksstatus)."
+        },
+        "destination": {
+          "name": "Bestemming",
+          "description": "Te bellen telefoonnummer."
+        },
+        "config_entry_id": {
+          "name": "Account",
+          "description": "Te gebruiken VoipCenter account; enkel nodig bij meerdere accounts."
+        }
+      }
+    },
+    "end_call": {
+      "name": "Gesprek beëindigen",
+      "description": "Beëindigt een lopend gesprek.",
+      "fields": {
+        "conversation_id": {
+          "name": "Gesprek ID",
+          "description": "ID van het lopende gesprek (zie de sensor Lopende gesprekken)."
+        },
+        "config_entry_id": {
+          "name": "Account",
+          "description": "Te gebruiken VoipCenter account; enkel nodig bij meerdere accounts."
+        }
+      }
+    },
+    "transfer_call": {
+      "name": "Gesprek doorschakelen",
+      "description": "Schakelt een lopend gesprek door naar een ander toestel.",
+      "fields": {
+        "conversation_id": {
+          "name": "Gesprek ID",
+          "description": "ID van het lopende gesprek (zie de sensor Lopende gesprekken)."
+        },
+        "destination": {
+          "name": "Bestemming",
+          "description": "Toestelnummer om naar door te schakelen."
+        },
+        "config_entry_id": {
+          "name": "Account",
+          "description": "Te gebruiken VoipCenter account; enkel nodig bij meerdere accounts."
         }
       }
     }

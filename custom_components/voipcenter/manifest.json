@@ -1,9 +1,12 @@
 {
-  "version": "1.0.0",
   "domain": "voipcenter",
-  "name": "Voipcenter",
-  "documentation": "https://github.com/bertouttier/voipcenter-hacs",
-  "issue_tracker": "https://github.com/bertouttier/voipcenter-hacs/issues",
+  "name": "VoipCenter",
   "codeowners": ["@bertouttier"],
-  "config_flow": true
+  "config_flow": true,
+  "documentation": "https://github.com/bertouttier/voipcenter-hacs",
+  "integration_type": "service",
+  "iot_class": "cloud_push",
+  "issue_tracker": "https://github.com/bertouttier/voipcenter-hacs/issues",
+  "requirements": ["python-socketio[asyncio_client]>=5.11.0"],
+  "version": "2.0.0"
 }

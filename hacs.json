@@ -1,4 +1,5 @@
 {
-  "name": "voipcenter",
-  "domains": ["switch"]
+  "name": "VoipCenter",
+  "homeassistant": "2026.10.4",
+  "render_readme": true
 }
