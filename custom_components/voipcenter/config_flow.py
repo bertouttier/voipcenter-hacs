@@ -97,7 +97,8 @@ class VoipCenterConfigFlow(ConfigFlow, domain=DOMAIN):
         try:
             await client.authenticate()
             await client.get_sip_accounts()
-        except VoipCenterAuthError:
+        except VoipCenterAuthError as err:
+            _LOGGER.debug("VoipCenter rejected the credentials: %s", err)
             return None, {"base": "invalid_auth"}
         except VoipCenterConnectionError:
             return None, {"base": "cannot_connect"}

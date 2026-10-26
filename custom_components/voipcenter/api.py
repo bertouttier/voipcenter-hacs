@@ -3,12 +3,13 @@
 import asyncio
 import json
 import logging
+import re
 import time
 from typing import Any
 
 import aiohttp
 
-from .const import API_BASE_URL
+from .const import API_BASE_URL, WEB_APP_SCRIPT_URL
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -16,6 +17,11 @@ REQUEST_TIMEOUT = aiohttp.ClientTimeout(total=15)
 
 # Renew tokens this many seconds before they expire.
 TOKEN_EXPIRY_MARGIN = 30
+
+BASE_URL_PATTERN = re.compile(r"https://api\.pbxonline\.be/v2/\d+")
+
+# Base URL in use, shared by all clients; updated when it is rediscovered.
+_base_url = API_BASE_URL
 
 
 class VoipCenterError(Exception):
@@ -45,14 +51,24 @@ def _parse_body(text: str) -> Any:
         return text
 
 
+def _unwrap(body: Any) -> Any:
+    """Return the object of a response wrapped in a one-item list."""
+    if isinstance(body, list) and len(body) == 1 and isinstance(body[0], dict):
+        return body[0]
+    return body
+
+
 def _error_message(body: Any) -> str:
     """Extract an error message from an error response."""
+    body = _unwrap(body)
     if isinstance(body, dict):
         if "error_message" in body:
             return str(body["error_message"])
         error = body.get("error")
-        if isinstance(error, dict) and "errorMessage" in error:
-            return str(error["errorMessage"])
+        if isinstance(error, dict):
+            for key in ("error_message", "errorMessage"):
+                if key in error:
+                    return str(error[key])
     return str(body)[:200]
 
 
@@ -100,7 +116,7 @@ class VoipCenterClient:
         try:
             async with self._session.request(
                 method,
-                f"{API_BASE_URL}/{path}",
+                f"{_base_url}/{path}",
                 json=json_data,
                 params=params,
                 headers=headers,
@@ -113,6 +129,7 @@ class VoipCenterClient:
             ) from err
 
     def _store_tokens(self, status: int, body: Any) -> bool:
+        body = _unwrap(body)
         if status != 200 or not isinstance(body, dict) or not body.get("token"):
             return False
         now = time.time()
@@ -125,19 +142,38 @@ class VoipCenterClient:
         )
         return True
 
+    async def _discover_base_url(self) -> bool:
+        """Read the current API base URL from the web app; True if it changed."""
+        global _base_url  # noqa: PLW0603
+        try:
+            async with self._session.get(
+                WEB_APP_SCRIPT_URL, timeout=aiohttp.ClientTimeout(total=60)
+            ) as resp:
+                script = await resp.text()
+        except (aiohttp.ClientError, TimeoutError) as err:
+            _LOGGER.debug("Could not read %s: %s", WEB_APP_SCRIPT_URL, err)
+            return False
+        if not (match := BASE_URL_PATTERN.search(script)) or match[0] == _base_url:
+            return False
+        _LOGGER.info("VoipCenter API moved from %s to %s", _base_url, match[0])
+        _base_url = match[0]
+        return True
+
     async def authenticate(self) -> None:
         """Get a fresh token pair using the API username and password."""
-        status, body = await self._raw_request(
-            "POST",
-            "token",
-            json_data={"username": self._username, "password": self._password},
-        )
-        if not self._store_tokens(status, body):
-            if status >= 500:
-                raise VoipCenterError(
-                    f"Token request failed ({status}): {_error_message(body)}"
-                )
+        credentials = {"username": self._username, "password": self._password}
+        status, body = await self._raw_request("POST", "token", json_data=credentials)
+        if status == 404 and await self._discover_base_url():
+            status, body = await self._raw_request(
+                "POST", "token", json_data=credentials
+            )
+        if self._store_tokens(status, body):
+            return
+        if status in (400, 401, 403):
             raise VoipCenterAuthError(_error_message(body))
+        raise VoipCenterError(
+            f"Token request to {_base_url} failed ({status}): {_error_message(body)}"
+        )
 
     async def _ensure_token(self, failed_token: str | None = None) -> str:
         """Return a valid token, refreshing or re-authenticating as needed."""
