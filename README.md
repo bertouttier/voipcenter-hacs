@@ -81,7 +81,8 @@ Requires Home Assistant 2026.10.4 or newer.
 ## Development
 
 Against a Home Assistant core checkout next to this repository (`../core`, set
-up with its `script/setup`, plus `uv pip install "python-socketio[asyncio_client]"`):
+up with its `script/setup`, plus the API client from a checkout next to it,
+`uv pip install -e ../aiovoipcenter`):
 
 ```bash
 script/test_core.sh        # pytest, ruff and hassfest using core's tooling

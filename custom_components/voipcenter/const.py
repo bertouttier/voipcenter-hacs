@@ -5,16 +5,9 @@ from typing import Final
 
 DOMAIN: Final = "voipcenter"
 
-# The version segment changes with PBXonline releases; when it no longer
-# exists, the current one is read from the PBXonline web app.
-API_BASE_URL: Final = "https://api.pbxonline.be/v2/261001"
-WEB_APP_SCRIPT_URL: Final = "https://pbxonline.be/v7/js/app.js"
-
 CONF_WS_URL: Final = "ws_url"
 CONF_WS_USERNAME: Final = "ws_username"
 CONF_WS_KEY: Final = "ws_key"
-
-DEFAULT_WS_URL: Final = "https://ws1.pbxonline.be:4123"
 
 UPDATE_INTERVAL: Final = timedelta(seconds=30)
 

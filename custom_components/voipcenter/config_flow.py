@@ -4,6 +4,13 @@ from collections.abc import Mapping
 import logging
 from typing import Any
 
+from aiovoipcenter import (
+    DEFAULT_WS_URL,
+    VoipCenterAuthError,
+    VoipCenterClient,
+    VoipCenterConnectionError,
+    VoipCenterError,
+)
 import probatio
 
 from homeassistant.config_entries import (
@@ -20,13 +27,7 @@ from homeassistant.helpers.selector import (
     TextSelectorType,
 )
 
-from .api import (
-    VoipCenterAuthError,
-    VoipCenterClient,
-    VoipCenterConnectionError,
-    VoipCenterError,
-)
-from .const import CONF_WS_KEY, CONF_WS_URL, CONF_WS_USERNAME, DEFAULT_WS_URL, DOMAIN
+from .const import CONF_WS_KEY, CONF_WS_URL, CONF_WS_USERNAME, DOMAIN
 from .coordinator import VoipCenterConfigEntry
 
 _LOGGER = logging.getLogger(__name__)

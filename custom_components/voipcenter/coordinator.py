@@ -6,13 +6,14 @@ from datetime import datetime
 import logging
 from typing import Any
 
+from aiovoipcenter import VoipCenterAuthError, VoipCenterClient, VoipCenterError
+
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.exceptions import ConfigEntryAuthFailed
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from homeassistant.util import dt as dt_util
 
-from .api import VoipCenterAuthError, VoipCenterClient, VoipCenterError
 from .const import DOMAIN, EVENT_CALL, UPDATE_INTERVAL
 
 _LOGGER = logging.getLogger(__name__)

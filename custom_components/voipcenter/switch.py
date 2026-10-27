@@ -2,12 +2,13 @@
 
 from typing import Any
 
+from aiovoipcenter import VoipCenterError
+
 from homeassistant.components.switch import SwitchEntity
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
-from .api import VoipCenterError
 from .coordinator import VoipCenterConfigEntry, VoipCenterCoordinator
 from .entity import ServiceItemEntity, async_add_item_entities
 

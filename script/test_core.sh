@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Run the tests, ruff and hassfest against a Home Assistant core checkout
-# (default: ../core, set up with `script/setup` and python-socketio installed).
+# (default: ../core, set up with `script/setup` and aiovoipcenter installed).
 set -euo pipefail
 
 REPO="$(cd "$(dirname "$0")/.." && pwd)"

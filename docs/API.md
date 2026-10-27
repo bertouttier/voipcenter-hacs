@@ -6,8 +6,8 @@ official reference is the *VoipCenterAPIv2 end user* PDF (kept on the `docs`
 branch); where the live API differs from it, this document follows the live API
 and says so.
 
-Code: [`custom_components/voipcenter/api.py`](../custom_components/voipcenter/api.py)
-and [`websocket.py`](../custom_components/voipcenter/websocket.py).
+Code: the [`aiovoipcenter`](https://github.com/bertouttier/aiovoipcenter)
+package (`client.py` and `websocket.py`).
 
 ## Base URL
 

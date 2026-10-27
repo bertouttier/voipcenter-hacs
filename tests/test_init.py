@@ -2,6 +2,7 @@
 
 from unittest.mock import AsyncMock, patch
 
+from aiovoipcenter import DEFAULT_WS_URL
 from pytest_homeassistant_custom_component.common import (
     MockConfigEntry,
     async_capture_events,
@@ -11,7 +12,6 @@ from custom_components.voipcenter.const import (
     CONF_WS_KEY,
     CONF_WS_URL,
     CONF_WS_USERNAME,
-    DEFAULT_WS_URL,
     DOMAIN,
     EVENT_CALL,
 )

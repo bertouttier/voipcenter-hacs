@@ -2,6 +2,7 @@
 
 from typing import Any
 
+from aiovoipcenter import VoipCenterError
 import probatio
 
 from homeassistant.config_entries import ConfigEntryState
@@ -15,7 +16,6 @@ from homeassistant.core import (
 from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
 from homeassistant.helpers import config_validation as cv
 
-from .api import VoipCenterError
 from .const import (
     ATTR_CONFIG_ENTRY_ID,
     ATTR_CONVERSATION_ID,
