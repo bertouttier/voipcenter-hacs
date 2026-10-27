@@ -10,6 +10,7 @@ from custom_components.voipcenter.api import (
     VoipCenterAuthError,
     VoipCenterClient,
     VoipCenterError,
+    _hash_password,
     _parse_body,
 )
 from custom_components.voipcenter.const import API_BASE_URL, WEB_APP_SCRIPT_URL
@@ -41,6 +42,13 @@ def test_parse_body_strips_html_prefix() -> None:
     assert _parse_body("plain") == "plain"
 
 
+def test_hash_password() -> None:
+    """Passwords are sent as sha256(md5(password)), like the web app does."""
+    assert _hash_password("secret") == (
+        "9f9dd1d2e3f189e7929a73ef1f5b54873622f64cc15210133c5085b5175325df"
+    )
+
+
 async def test_authenticate_and_request(
     hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
 ) -> None:
@@ -54,7 +62,10 @@ async def test_authenticate_and_request(
 
     token_calls = [c for c in aioclient_mock.mock_calls if str(c[1]).endswith("/token")]
     assert len(token_calls) == 1
-    assert token_calls[0][2] == {"username": "apiuser", "password": "secret"}
+    assert token_calls[0][2] == {
+        "username": "apiuser",
+        "password": _hash_password("secret"),
+    }
     assert aioclient_mock.mock_calls[-1][3]["Authorization"] == "Bearer tok"
 
 
@@ -157,3 +168,17 @@ async def test_action_payloads(
         {"ID": 2719},
         {"2719": {"state": "red"}},
     ]
+
+
+async def test_latest_api_from_token_response(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+) -> None:
+    """The base URL follows the ``latestApi`` of the token response."""
+    new_base = "https://api.pbxonline.be/v2/270101"
+    aioclient_mock.post(
+        f"{API_BASE_URL}/token", json=_tokens() | {"latestApi": "270101"}
+    )
+    aioclient_mock.get(f"{new_base}/pbx/sipaccount", json={"results": [{"ID": 1}]})
+    client = VoipCenterClient(async_get_clientsession(hass), "apiuser", "secret")
+
+    assert await client.get_sip_accounts() == [{"ID": 1}]

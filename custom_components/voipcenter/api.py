@@ -1,6 +1,7 @@
 """Async client for the VoipCenter (PBXonline) APIv2."""
 
 import asyncio
+import hashlib
 import json
 import logging
 import re
@@ -34,6 +35,12 @@ class VoipCenterConnectionError(VoipCenterError):
 
 class VoipCenterAuthError(VoipCenterError):
     """The API username / password were rejected."""
+
+
+def _hash_password(password: str) -> str:
+    """Hash a password the way the token endpoint expects: sha256(md5(password))."""
+    md5 = hashlib.md5(password.encode()).hexdigest()
+    return hashlib.sha256(md5.encode()).hexdigest()
 
 
 def _parse_body(text: str) -> Any:
@@ -129,9 +136,17 @@ class VoipCenterClient:
             ) from err
 
     def _store_tokens(self, status: int, body: Any) -> bool:
+        global _base_url  # noqa: PLW0603
         body = _unwrap(body)
         if status != 200 or not isinstance(body, dict) or not body.get("token"):
             return False
+        if (latest := body.get("latestApi")) and str(latest).isdigit():
+            latest_url = f"https://api.pbxonline.be/v2/{latest}"
+            if latest_url != _base_url:
+                _LOGGER.info(
+                    "VoipCenter API moved from %s to %s", _base_url, latest_url
+                )
+                _base_url = latest_url
         now = time.time()
         self._token = body["token"]
         # Token is valid for 10 minutes, the refresh token for 60 minutes.
@@ -161,7 +176,10 @@ class VoipCenterClient:
 
     async def authenticate(self) -> None:
         """Get a fresh token pair using the API username and password."""
-        credentials = {"username": self._username, "password": self._password}
+        credentials = {
+            "username": self._username,
+            "password": _hash_password(self._password),
+        }
         status, body = await self._raw_request("POST", "token", json_data=credentials)
         if status == 404 and await self._discover_base_url():
             status, body = await self._raw_request(
