@@ -73,7 +73,7 @@ Requires Home Assistant 2026.10.4 or newer.
 1. **API user** – the username and password of an API user of your VoipCenter
    account (used to obtain the APIv2 JWT token).
 2. **Realtime call info** *(optional)* – the websocket server URL
-   (`https://wsX.voipcenter.be:4123`, default `ws1`), the websocket username and
+   (`https://wsX.pbxonline.be:4123`, default `ws1`), the websocket username and
    the websocket key. They are pre-filled from the first websocket user found
    in *Config → Websockets*; leave the username empty to skip. You can change
    this later via *Configure* on the integration.

@@ -65,6 +65,8 @@ class VoipCenterCoordinator(DataUpdateCoordinator[VoipCenterData]):
         )
         self.client = client
         self._state = VoipCenterData()
+        # Device registry ID of the service device, parent of the SIP accounts.
+        self.service_device_id: str | None = None
 
     async def _async_update_data(self) -> VoipCenterData:
         try:

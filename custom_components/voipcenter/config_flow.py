@@ -80,6 +80,7 @@ class VoipCenterConfigFlow(ConfigFlow, domain=DOMAIN):
     """Handle a config flow for VoipCenter."""
 
     VERSION = 3
+    MINOR_VERSION = 2
 
     def __init__(self) -> None:
         """Initialize the flow."""

@@ -132,7 +132,7 @@ class VoipCenterClient:
                 return resp.status, _parse_body(await resp.text())
         except (aiohttp.ClientError, TimeoutError) as err:
             raise VoipCenterConnectionError(
-                f"Error communicating with VoipCenter: {err}"
+                f"Error communicating with VoipCenter: {err or type(err).__name__}"
             ) from err
 
     def _store_tokens(self, status: int, body: Any) -> bool:
@@ -226,11 +226,23 @@ class VoipCenterClient:
         json_data: Any = None,
         params: dict[str, Any] | None = None,
     ) -> Any:
-        """Do an authenticated request, renewing the token once on a 401."""
+        """Do an authenticated request, renewing the token once on a 401.
+
+        GET requests are retried once when the API can't be reached, so a
+        single slow or dropped response doesn't make all entities unavailable.
+        """
         token = await self._ensure_token()
-        status, body = await self._raw_request(
-            method, path, json_data=json_data, params=params, token=token
-        )
+        try:
+            status, body = await self._raw_request(
+                method, path, json_data=json_data, params=params, token=token
+            )
+        except VoipCenterConnectionError as err:
+            if method != "GET":
+                raise
+            _LOGGER.debug("Retrying %s %s: %s", method, path, err)
+            status, body = await self._raw_request(
+                method, path, json_data=json_data, params=params, token=token
+            )
         if status == 401:
             token = await self._ensure_token(failed_token=token)
             status, body = await self._raw_request(

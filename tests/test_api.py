@@ -3,7 +3,11 @@
 import time
 
 import pytest
-from pytest_homeassistant_custom_component.test_util.aiohttp import AiohttpClientMocker
+from pytest_homeassistant_custom_component.test_util.aiohttp import (
+    AiohttpClientMocker,
+    AiohttpClientMockResponse,
+)
+from yarl import URL
 
 from custom_components.voipcenter import api
 from custom_components.voipcenter.api import (
@@ -182,3 +186,31 @@ async def test_latest_api_from_token_response(
     client = VoipCenterClient(async_get_clientsession(hass), "apiuser", "secret")
 
     assert await client.get_sip_accounts() == [{"ID": 1}]
+
+
+async def test_get_is_retried_once_on_timeout(
+    hass: HomeAssistant, aioclient_mock: AiohttpClientMocker
+) -> None:
+    """A GET that times out once is retried instead of failing the poll."""
+    responses = iter(
+        [
+            TimeoutError(),
+            AiohttpClientMockResponse(
+                "GET",
+                URL(f"{API_BASE_URL}/pbx/voicemail"),
+                json={"results": [{"ID": 7}]},
+            ),
+        ]
+    )
+
+    async def side_effect(*args, **kwargs):
+        response = next(responses)
+        if isinstance(response, Exception):
+            raise response
+        return response
+
+    aioclient_mock.post(f"{API_BASE_URL}/token", json=_tokens())
+    aioclient_mock.get(f"{API_BASE_URL}/pbx/voicemail", side_effect=side_effect)
+    client = VoipCenterClient(async_get_clientsession(hass), "apiuser", "secret")
+
+    assert await client.get_voicemailboxes() == [{"ID": 7}]

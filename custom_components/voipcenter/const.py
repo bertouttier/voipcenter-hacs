@@ -14,7 +14,7 @@ CONF_WS_URL: Final = "ws_url"
 CONF_WS_USERNAME: Final = "ws_username"
 CONF_WS_KEY: Final = "ws_key"
 
-DEFAULT_WS_URL: Final = "https://ws1.voipcenter.be:4123"
+DEFAULT_WS_URL: Final = "https://ws1.pbxonline.be:4123"
 
 UPDATE_INTERVAL: Final = timedelta(seconds=30)
 

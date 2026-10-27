@@ -88,7 +88,7 @@ class SipAccountEntity(VoipCenterItemEntity):
             manufacturer="VoipCenter",
             model="SIP account",
             serial_number=account.get("sipUsername"),
-            via_device=_service_identifier(coordinator),
+            via_device_id=coordinator.service_device_id,
         )
 
 

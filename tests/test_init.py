@@ -18,7 +18,7 @@ from custom_components.voipcenter.const import (
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.const import ATTR_ENTITY_ID, STATE_OFF, STATE_ON
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers import entity_registry as er
+from homeassistant.helpers import device_registry as dr, entity_registry as er
 
 
 def _entity_id(hass: HomeAssistant, platform: str, unique_id: str) -> str:
@@ -177,3 +177,43 @@ async def test_migrate_v1_entry(hass: HomeAssistant, mock_client: AsyncMock) -> 
     assert entry.unique_id == "apiuser"
     assert entry.data == {"username": "apiuser", "password": "secret"}
     assert entry.state is ConfigEntryState.LOADED
+
+
+async def test_migrate_websocket_host(
+    hass: HomeAssistant, mock_client: AsyncMock
+) -> None:
+    """The old wsX.voipcenter.be websocket URL moves to wsX.pbxonline.be."""
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        version=3,
+        minor_version=1,
+        unique_id="apiuser",
+        data={"username": "apiuser", "password": "secret"},
+        options={
+            CONF_WS_URL: "https://ws2.voipcenter.be:4123",
+            CONF_WS_USERNAME: "wsuser",
+            CONF_WS_KEY: "wskey",
+        },
+    )
+    entry.add_to_hass(hass)
+    with patch("custom_components.voipcenter.VoipCenterWebsocket", autospec=True):
+        assert await hass.config_entries.async_setup(entry.entry_id)
+        await hass.async_block_till_done()
+
+    assert entry.minor_version == 2
+    assert entry.options[CONF_WS_URL] == "https://ws2.pbxonline.be:4123"
+
+
+async def test_sip_account_device_is_linked_to_service(
+    hass: HomeAssistant, mock_client: AsyncMock, mock_config_entry: MockConfigEntry
+) -> None:
+    """SIP account devices hang under the VoipCenter service device."""
+    mock_config_entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(mock_config_entry.entry_id)
+    await hass.async_block_till_done()
+
+    registry = dr.async_get(hass)
+    entry_id = mock_config_entry.entry_id
+    service = registry.async_get_device_by_identifier((DOMAIN, "apiuser"), entry_id)
+    sip = registry.async_get_device_by_identifier((DOMAIN, "apiuser_sip_471"), entry_id)
+    assert sip.via_device_id == service.id

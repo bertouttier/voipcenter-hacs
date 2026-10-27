@@ -15,7 +15,7 @@ mkdir -p "$PKG/test_util"
 touch "$PKG/__init__.py" "$PKG/test_util/__init__.py"
 echo "from tests.common import *  # noqa: F403" > "$PKG/common.py"
 echo "from tests.common import MockConfigEntry, async_capture_events  # noqa: F401" >> "$PKG/common.py"
-echo "from tests.test_util.aiohttp import AiohttpClientMocker  # noqa: F401" > "$PKG/test_util/aiohttp.py"
+echo "from tests.test_util.aiohttp import *  # noqa: F403" > "$PKG/test_util/aiohttp.py"
 
 echo "Home Assistant $("$PY" -c 'from homeassistant.const import __version__; print(__version__)')"
 

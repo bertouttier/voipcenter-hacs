@@ -1,11 +1,12 @@
 """The VoipCenter integration."""
 
 import logging
+import re
 
 from homeassistant.const import CONF_PASSWORD, CONF_USERNAME, Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryAuthFailed
-from homeassistant.helpers import config_validation as cv
+from homeassistant.helpers import config_validation as cv, device_registry as dr
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.typing import ConfigType
 
@@ -20,6 +21,10 @@ _LOGGER = logging.getLogger(__name__)
 PLATFORMS: list[Platform] = [Platform.BINARY_SENSOR, Platform.SENSOR, Platform.SWITCH]
 
 CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
+
+# The websocket servers moved from wsX.voipcenter.be to wsX.pbxonline.be; the
+# old names no longer match their TLS certificate.
+OLD_WS_HOST = re.compile(r"(ws\d+)\.voipcenter\.be")
 
 
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
@@ -40,6 +45,19 @@ async def async_setup_entry(hass: HomeAssistant, entry: VoipCenterConfigEntry) -
     )
     coordinator = VoipCenterCoordinator(hass, entry, client)
     await coordinator.async_config_entry_first_refresh()
+    coordinator.service_device_id = (
+        dr.async_get(hass)
+        .async_get_or_create(
+            config_entry_id=entry.entry_id,
+            identifiers={(DOMAIN, entry.unique_id or entry.entry_id)},
+            name=f"VoipCenter {entry.data[CONF_USERNAME]}",
+            manufacturer="VoipCenter",
+            model="VoipCenter",
+            entry_type=dr.DeviceEntryType.SERVICE,
+            configuration_url="https://pbxonline.be",
+        )
+        .id
+    )
     entry.runtime_data = coordinator
 
     options = entry.options
@@ -73,12 +91,17 @@ async def async_migrate_entry(
             # suggested again from config/websocket in the options flow.
             options = {CONF_WS_URL: DEFAULT_WS_URL, CONF_WS_USERNAME: ws_username}
         hass.config_entries.async_update_entry(
-            entry, data={}, options=options, version=3
+            entry, data={}, options=options, version=3, minor_version=2
         )
         _LOGGER.info(
             "Migrated VoipCenter entry %s from v1 API; re-enter an APIv2 user",
             entry.title,
         )
+    if entry.minor_version < 2:
+        options = dict(entry.options)
+        if url := options.get(CONF_WS_URL):
+            options[CONF_WS_URL] = OLD_WS_HOST.sub(r"\1.pbxonline.be", url)
+        hass.config_entries.async_update_entry(entry, options=options, minor_version=2)
     return True
 
 
