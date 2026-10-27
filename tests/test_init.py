@@ -45,6 +45,7 @@ async def test_setup_creates_entities(
     assert state.state == STATE_ON
     state = hass.states.get(_entity_id(hass, "sensor", "apiuser_voicemail_messages_12"))
     assert state.state == "3"
+    assert state.attributes["logging_messages"] == 0
     assert state.name == "VoipCenter apiuser Main voicemail messages"
 
     switch_id = _entity_id(hass, "switch", "apiuser_function_indicator_2719")

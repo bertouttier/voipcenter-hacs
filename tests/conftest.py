@@ -17,13 +17,20 @@ SIP_ACCOUNTS = [
         "extension": 1,
         "currentState": "idle",
         "availability": True,
-        "regStatus": True,
+        "isRegistered": True,
     }
 ]
 FUNCTION_INDICATORS = [
     {"ID": 2719, "logicalName": "Night mode", "extension": 2001, "color": "green"}
 ]
-VOICEMAILBOXES = [{"ID": 12, "logicalName": "Main", "extension": 1001, "messages": 3}]
+VOICEMAILBOXES = [
+    {
+        "ID": 12,
+        "logicalName": "Main",
+        "extension": 1001,
+        "messages": {"inbox": 3, "logging": 0},
+    }
+]
 CONVERSATIONS = [
     {"ID": 9570231, "direction": "in", "origin": "32470123456", "inCall": True}
 ]

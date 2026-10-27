@@ -113,13 +113,23 @@ class VoicemailMessagesSensor(ServiceItemEntity, SensorEntity):
 
     @property
     def native_value(self) -> int | None:
-        """Return the number of messages."""
+        """Return the number of messages in the inbox."""
+        messages = self.item.get("messages")
+        # The API returns the count per folder, e.g. {"inbox": 3, "logging": 0};
+        # its documentation describes a plain number.
+        if isinstance(messages, dict):
+            messages = messages.get("inbox")
         try:
-            return int(self.item["messages"])
-        except KeyError, TypeError, ValueError:
+            return int(messages)  # type: ignore[arg-type]
+        except TypeError, ValueError:
             return None
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
-        """Return the voicemail box details."""
-        return {"id": self.item_id, "extension": self.item.get("extension")}
+        """Return the voicemail box details and the count of the other folders."""
+        attributes = {"id": self.item_id, "extension": self.item.get("extension")}
+        if isinstance(messages := self.item.get("messages"), dict):
+            attributes.update(
+                {f"{folder}_messages": count for folder, count in messages.items()}
+            )
+        return attributes

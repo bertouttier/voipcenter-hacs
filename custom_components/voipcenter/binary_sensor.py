@@ -76,7 +76,8 @@ class SipRegisteredBinarySensor(SipAccountEntity, BinarySensorEntity):
     @property
     def is_on(self) -> bool | None:
         """Return whether the SIP account is registered."""
-        return _as_bool(self.item.get("regStatus"))
+        # The API returns "isRegistered"; its documentation calls it "regStatus".
+        return _as_bool(self.item.get("isRegistered", self.item.get("regStatus")))
 
 
 class SipAvailableBinarySensor(SipAccountEntity, BinarySensorEntity):
