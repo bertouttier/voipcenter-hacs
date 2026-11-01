@@ -1,7 +1,10 @@
 """Sensors for the VoipCenter integration."""
 
+from dataclasses import asdict
 from datetime import datetime
 from typing import Any
+
+from aiovoipcenter.types import Record, Voicemail
 
 from homeassistant.components.sensor import (
     SensorDeviceClass,
@@ -64,7 +67,12 @@ class OngoingCallsSensor(VoipCenterEntity, SensorEntity):
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
         """Return the ongoing conversations."""
-        return {"conversations": self.coordinator.data.conversations}
+        return {
+            "conversations": [
+                asdict(conversation)
+                for conversation in self.coordinator.data.conversations
+            ]
+        }
 
 
 class LastCallEventSensor(VoipCenterEntity, SensorEntity):
@@ -89,7 +97,7 @@ class SipAccountStateSensor(SipAccountEntity, SensorEntity):
     @property
     def native_value(self) -> str | None:
         """Return the current state of the SIP account."""
-        state = self.item.get("currentState")
+        state = self.item.currentState
         return str(state).lower() if state is not None else None
 
     @property
@@ -98,26 +106,27 @@ class SipAccountStateSensor(SipAccountEntity, SensorEntity):
         account = self.item
         return {
             "id": self.item_id,
-            "extension": account.get("extension"),
-            "sip_username": account.get("sipUsername"),
-            "user_agent": account.get("userAgent"),
-            "ip_address": account.get("ipAddress"),
+            "extension": account.extension,
+            "sip_username": account.sipUsername,
+            "user_agent": account.userAgent,
+            "ip_address": account.ipAddress,
         }
 
 
-class VoicemailMessagesSensor(ServiceItemEntity, SensorEntity):
+class VoicemailMessagesSensor(ServiceItemEntity[Voicemail], SensorEntity):
     """Number of messages in a voicemail box."""
 
     _collection = "voicemailboxes"
+    _model = Voicemail
     _attr_state_class = SensorStateClass.MEASUREMENT
 
     @property
     def native_value(self) -> int | None:
         """Return the number of messages in the inbox."""
-        messages = self.item.get("messages")
+        messages: Any = self.item.messages
         # The API returns the count per folder, e.g. {"inbox": 3, "logging": 0};
         # its documentation describes a plain number.
-        if isinstance(messages, dict):
+        if isinstance(messages, Record):
             messages = messages.get("inbox")
         try:
             return int(messages)  # type: ignore[arg-type]
@@ -127,9 +136,9 @@ class VoicemailMessagesSensor(ServiceItemEntity, SensorEntity):
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
         """Return the voicemail box details and the count of the other folders."""
-        attributes = {"id": self.item_id, "extension": self.item.get("extension")}
-        if isinstance(messages := self.item.get("messages"), dict):
+        attributes = {"id": self.item_id, "extension": self.item.extension}
+        if isinstance(messages := self.item.messages, Record):
             attributes.update(
-                {f"{folder}_messages": count for folder, count in messages.items()}
+                {f"{folder}_messages": messages[folder] for folder in messages}
             )
         return attributes

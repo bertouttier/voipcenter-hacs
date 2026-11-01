@@ -38,14 +38,6 @@ async def async_setup_entry(
     async_add_item_entities(entry, async_add_entities, "sip_accounts", _sip_factory)
 
 
-def _as_bool(value: object) -> bool | None:
-    if value is None:
-        return None
-    if isinstance(value, str):
-        return value.strip().lower() in ("1", "true", "yes")
-    return bool(value)
-
-
 class InCallBinarySensor(VoipCenterEntity, BinarySensorEntity):
     """On while there is at least one ongoing conversation."""
 
@@ -76,8 +68,7 @@ class SipRegisteredBinarySensor(SipAccountEntity, BinarySensorEntity):
     @property
     def is_on(self) -> bool | None:
         """Return whether the SIP account is registered."""
-        # The API returns "isRegistered"; its documentation calls it "regStatus".
-        return _as_bool(self.item.get("isRegistered", self.item.get("regStatus")))
+        return self.item.isRegistered
 
 
 class SipAvailableBinarySensor(SipAccountEntity, BinarySensorEntity):
@@ -86,4 +77,4 @@ class SipAvailableBinarySensor(SipAccountEntity, BinarySensorEntity):
     @property
     def is_on(self) -> bool | None:
         """Return whether the SIP account is available."""
-        return _as_bool(self.item.get("availability"))
+        return self.item.availability

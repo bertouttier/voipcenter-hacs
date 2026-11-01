@@ -1,7 +1,8 @@
 """Base entities for the VoipCenter integration."""
 
 from collections.abc import Callable, Iterable
-from typing import Any
+
+from aiovoipcenter.types import FunctionIndicator, SipAccount, Voicemail
 
 from homeassistant.const import CONF_USERNAME
 from homeassistant.core import callback
@@ -39,12 +40,16 @@ class VoipCenterEntity(CoordinatorEntity[VoipCenterCoordinator]):
         )
 
 
-class VoipCenterItemEntity(CoordinatorEntity[VoipCenterCoordinator]):
+class VoipCenterItemEntity[ItemT: SipAccount | FunctionIndicator | Voicemail](
+    CoordinatorEntity[VoipCenterCoordinator]
+):
     """An entity for one item (SIP account, indicator, mailbox) of the PBX."""
 
     _attr_has_entity_name = True
     # Name of the VoipCenterData attribute holding the items, keyed by ID.
     _collection: str
+    # Item class, instantiated empty while the item is missing from the data.
+    _model: type[ItemT]
 
     def __init__(
         self, coordinator: VoipCenterCoordinator, item_id: int, key: str
@@ -56,9 +61,10 @@ class VoipCenterItemEntity(CoordinatorEntity[VoipCenterCoordinator]):
         self._attr_translation_key = key
 
     @property
-    def item(self) -> dict[str, Any]:
+    def item(self) -> ItemT:
         """Return the current API data of this item."""
-        return getattr(self.coordinator.data, self._collection).get(self.item_id, {})
+        item = getattr(self.coordinator.data, self._collection).get(self.item_id)
+        return item if item is not None else self._model()
 
     @property
     def available(self) -> bool:
@@ -68,10 +74,11 @@ class VoipCenterItemEntity(CoordinatorEntity[VoipCenterCoordinator]):
         )
 
 
-class SipAccountEntity(VoipCenterItemEntity):
+class SipAccountEntity(VoipCenterItemEntity[SipAccount]):
     """An entity on the device of a SIP account."""
 
     _collection = "sip_accounts"
+    _model = SipAccount
 
     def __init__(
         self, coordinator: VoipCenterCoordinator, item_id: int, key: str
@@ -79,7 +86,7 @@ class SipAccountEntity(VoipCenterItemEntity):
         """Initialize the entity."""
         super().__init__(coordinator, item_id, key)
         account = self.item
-        name = account.get("logicalName") or account.get("sipUsername") or item_id
+        name = account.logicalName or account.sipUsername or item_id
         self._attr_device_info = DeviceInfo(
             identifiers={
                 (DOMAIN, f"{coordinator.config_entry.unique_id}_sip_{item_id}")
@@ -87,12 +94,14 @@ class SipAccountEntity(VoipCenterItemEntity):
             name=str(name),
             manufacturer="VoipCenter",
             model="SIP account",
-            serial_number=account.get("sipUsername"),
+            serial_number=account.sipUsername,
             via_device_id=coordinator.service_device_id,
         )
 
 
-class ServiceItemEntity(VoipCenterItemEntity):
+class ServiceItemEntity[ItemT: FunctionIndicator | Voicemail](
+    VoipCenterItemEntity[ItemT]
+):
     """An item entity on the VoipCenter service device, named after the item."""
 
     def __init__(
@@ -104,7 +113,7 @@ class ServiceItemEntity(VoipCenterItemEntity):
             identifiers={_service_identifier(coordinator)}
         )
         self._attr_translation_placeholders = {
-            "name": str(self.item.get("logicalName") or item_id)
+            "name": str(self.item.logicalName or item_id)
         }
 
 

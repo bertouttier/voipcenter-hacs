@@ -67,13 +67,13 @@ async def _async_discover_websocket(client: VoipCenterClient) -> dict[str, str]:
     except VoipCenterError as err:
         _LOGGER.debug("Could not read websocket users: %s", err)
         return {}
-    users = [user for user in users if user.get("wsUsername")]
-    users.sort(key=lambda user: not user.get("isActive", True))
+    users = [user for user in users if user.wsUsername]
+    users.sort(key=lambda user: user.isActive is False)
     if not users:
         return {}
     return {
-        CONF_WS_USERNAME: str(users[0]["wsUsername"]),
-        CONF_WS_KEY: str(users[0].get("wsKey") or ""),
+        CONF_WS_USERNAME: str(users[0].wsUsername),
+        CONF_WS_KEY: users[0].wsKey or "",
     }
 
 

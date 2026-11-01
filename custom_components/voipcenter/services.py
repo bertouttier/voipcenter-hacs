@@ -1,5 +1,6 @@
 """Services for the VoipCenter integration."""
 
+from dataclasses import asdict, is_dataclass
 from typing import Any
 
 from aiovoipcenter import VoipCenterError
@@ -70,6 +71,9 @@ def _get_coordinator(hass: HomeAssistant, call: ServiceCall) -> VoipCenterCoordi
 
 
 def _as_response(result: Any) -> ServiceResponse:
+    if is_dataclass(result) and not isinstance(result, type):
+        # Only the fields the API returned.
+        return {k: v for k, v in asdict(result).items() if v is not None}
     if isinstance(result, dict):
         return result
     return {"result": result}

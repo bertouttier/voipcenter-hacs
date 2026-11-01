@@ -1,12 +1,13 @@
 """Data coordinator for the VoipCenter integration."""
 
 import asyncio
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import datetime
 import logging
 from typing import Any
 
 from aiovoipcenter import VoipCenterAuthError, VoipCenterClient, VoipCenterError
+from aiovoipcenter.types import Conversation, FunctionIndicator, SipAccount, Voicemail
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
@@ -21,25 +22,21 @@ _LOGGER = logging.getLogger(__name__)
 type VoipCenterConfigEntry = ConfigEntry[VoipCenterCoordinator]
 
 
-def _by_id(items: list[dict[str, Any]]) -> dict[int, dict[str, Any]]:
-    """Index API items by their integer ``ID``."""
-    indexed: dict[int, dict[str, Any]] = {}
-    for item in items:
-        try:
-            indexed[int(item["ID"])] = item
-        except KeyError, TypeError, ValueError:
-            continue
-    return indexed
+def _by_id[T: SipAccount | FunctionIndicator | Voicemail](
+    items: list[T],
+) -> dict[int, T]:
+    """Index API items by their ``ID``, skipping items without one."""
+    return {item.ID: item for item in items if item.ID is not None}
 
 
 @dataclass
 class VoipCenterData:
     """Data fetched from VoipCenter."""
 
-    sip_accounts: dict[int, dict[str, Any]] = field(default_factory=dict)
-    function_indicators: dict[int, dict[str, Any]] = field(default_factory=dict)
-    voicemailboxes: dict[int, dict[str, Any]] = field(default_factory=dict)
-    conversations: list[dict[str, Any]] = field(default_factory=list)
+    sip_accounts: dict[int, SipAccount] = field(default_factory=dict)
+    function_indicators: dict[int, FunctionIndicator] = field(default_factory=dict)
+    voicemailboxes: dict[int, Voicemail] = field(default_factory=dict)
+    conversations: list[Conversation] = field(default_factory=list)
     last_call_event: dict[str, Any] | None = None
     last_call_event_time: datetime | None = None
     websocket_connected: bool = False
@@ -97,9 +94,10 @@ class VoipCenterCoordinator(DataUpdateCoordinator[VoipCenterData]):
     ) -> None:
         """Set a function indicator and refresh."""
         await self.client.set_function_indicator(indicator_id, state)
-        if state and indicator_id in self._state.function_indicators:
+        indicators = self._state.function_indicators
+        if state and indicator_id in indicators:
             # Optimistic update; the next poll confirms it.
-            self._state.function_indicators[indicator_id]["color"] = state
+            indicators[indicator_id] = replace(indicators[indicator_id], color=state)
             self.async_set_updated_data(self._state)
         await self.async_request_refresh()
 

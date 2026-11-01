@@ -3,6 +3,7 @@
 from typing import Any
 
 from aiovoipcenter import VoipCenterError
+from aiovoipcenter.types import FunctionIndicator
 
 from homeassistant.components.switch import SwitchEntity
 from homeassistant.core import HomeAssistant
@@ -34,15 +35,16 @@ async def async_setup_entry(
     async_add_item_entities(entry, async_add_entities, "function_indicators", _factory)
 
 
-class FunctionIndicatorSwitch(ServiceItemEntity, SwitchEntity):
+class FunctionIndicatorSwitch(ServiceItemEntity[FunctionIndicator], SwitchEntity):
     """A function indicator: on is red, off is green."""
 
     _collection = "function_indicators"
+    _model = FunctionIndicator
 
     @property
     def is_on(self) -> bool | None:
         """Return whether the indicator is red."""
-        color = self.item.get("color")
+        color = self.item.color
         if color not in (COLOR_ON, COLOR_OFF):
             return None
         return color == COLOR_ON
@@ -52,9 +54,9 @@ class FunctionIndicatorSwitch(ServiceItemEntity, SwitchEntity):
         """Return the indicator details."""
         return {
             "id": self.item_id,
-            "extension": self.item.get("extension"),
-            "color": self.item.get("color"),
-            "description": self.item.get("description"),
+            "extension": self.item.extension,
+            "color": self.item.color,
+            "description": self.item.description,
         }
 
     async def async_turn_on(self, **kwargs: Any) -> None:

@@ -3,6 +3,13 @@
 from collections.abc import Generator
 from unittest.mock import AsyncMock, patch
 
+from aiovoipcenter.types import (
+    Conversation,
+    FunctionIndicator,
+    SipAccount,
+    Voicemail,
+    WebsocketUser,
+)
 import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
@@ -63,12 +70,23 @@ def mock_client() -> Generator[AsyncMock]:
         ),
     ):
         client = client_cls.return_value
-        client.get_sip_accounts.return_value = SIP_ACCOUNTS
-        client.get_function_indicators.return_value = FUNCTION_INDICATORS
-        client.get_voicemailboxes.return_value = VOICEMAILBOXES
-        client.get_conversations.return_value = CONVERSATIONS
-        client.get_websocket_users.return_value = WEBSOCKET_USERS
-        client.start_call.return_value = {"ID": 1234}
+        # Parse the raw API payloads the way the real client does.
+        client.get_sip_accounts.return_value = [
+            SipAccount.from_api(item) for item in SIP_ACCOUNTS
+        ]
+        client.get_function_indicators.return_value = [
+            FunctionIndicator.from_api(item) for item in FUNCTION_INDICATORS
+        ]
+        client.get_voicemailboxes.return_value = [
+            Voicemail.from_api(item) for item in VOICEMAILBOXES
+        ]
+        client.get_conversations.return_value = [
+            Conversation.from_api(item) for item in CONVERSATIONS
+        ]
+        client.get_websocket_users.return_value = [
+            WebsocketUser.from_api(item) for item in WEBSOCKET_USERS
+        ]
+        client.start_call.return_value = Conversation(ID=1234)
         yield client
 
 
