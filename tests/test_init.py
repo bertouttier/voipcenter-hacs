@@ -124,8 +124,10 @@ async def test_websocket_events(hass: HomeAssistant, mock_client: AsyncMock) -> 
         assert await hass.config_entries.async_setup(entry.entry_id)
         await hass.async_block_till_done()
 
-    url, username, key, on_notify, on_connection = ws_cls.call_args.args
+    _, url, username, key = ws_cls.call_args.args
     assert (url, username, key) == (DEFAULT_WS_URL, "wsuser", "wskey")
+    on_notify = ws_cls.call_args.kwargs["on_notify"]
+    on_connection = ws_cls.call_args.kwargs["on_connection_change"]
 
     events = async_capture_events(hass, EVENT_CALL)
     on_connection(True)

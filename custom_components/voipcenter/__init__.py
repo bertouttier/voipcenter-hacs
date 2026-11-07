@@ -63,11 +63,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: VoipCenterConfigEntry) -
     options = entry.options
     if options.get(CONF_WS_USERNAME) and options.get(CONF_WS_KEY):
         websocket = VoipCenterWebsocket(
+            async_get_clientsession(hass),
             options[CONF_WS_URL],
             options[CONF_WS_USERNAME],
             options[CONF_WS_KEY],
-            coordinator.handle_call_event,
-            coordinator.handle_websocket_connection,
+            on_notify=coordinator.handle_call_event,
+            on_connection_change=coordinator.handle_websocket_connection,
         )
         entry.async_create_background_task(
             hass, websocket.run(), f"{DOMAIN}_websocket_{entry.entry_id}"
