@@ -1,5 +1,6 @@
 """Tests for the monthly call minutes sensors."""
 
+from typing import Any
 from unittest.mock import AsyncMock
 
 from aiovoipcenter import VoipCenterError
@@ -48,6 +49,9 @@ async def test_minutes_sensors(
     assert state.attributes["calls"] == 1
     assert state.attributes["numbers"] == ["32495000000"]
     assert state.attributes["previous_month_minutes"] == 0.0
+    # Calls 102 (route lost) and 103 (route not there yet) may be forwarded.
+    assert state.attributes["unknown_route_calls"] == 2
+    assert state.attributes["previous_month_unknown_route_calls"] == 0
 
     # The menu dialplan does not forward externally, so it has no sensor.
     registry = er.async_get(hass)
@@ -58,19 +62,58 @@ async def test_minutes_sensors(
 
 
 async def test_routes_are_fetched_once(
-    hass: HomeAssistant, mock_client: AsyncMock, mock_config_entry: MockConfigEntry
+    hass: HomeAssistant,
+    mock_client: AsyncMock,
+    mock_config_entry: MockConfigEntry,
+    hass_storage: dict[str, Any],
 ) -> None:
-    """Only calls answered without a SIP account get their route fetched, once."""
+    """Calls answered without a SIP account get their route fetched once.
+
+    An empty route of a call that just ended is fetched again later; an old
+    one is stored as unknown.
+    """
     await _setup(hass, mock_config_entry)
     fetched = sorted(
         call.args[0] for call in mock_client.get_call_route.await_args_list
     )
-    assert fetched == [100, 101]
+    assert fetched == [100, 101, 102, 103]
+    stored = hass_storage[f"{DOMAIN}.{mock_config_entry.entry_id}.call_routes"]
+    assert stored["version"] == 2
+    assert stored["data"]["routes"] == {
+        "100": [3609, "32495000000"],
+        "101": None,
+        "102": "unknown",
+    }
 
+    mock_client.get_call_route.reset_mock()
     await mock_config_entry.runtime_data.call_stats.async_refresh()
     await hass.async_block_till_done()
 
-    assert mock_client.get_call_route.await_count == 2
+    refetched = [call.args[0] for call in mock_client.get_call_route.await_args_list]
+    assert refetched == [103]
+    assert _state(hass, "apiuser_forwarded_minutes_3609").state == "1.5"
+
+
+async def test_route_storage_migration(
+    hass: HomeAssistant,
+    mock_client: AsyncMock,
+    mock_config_entry: MockConfigEntry,
+    hass_storage: dict[str, Any],
+) -> None:
+    """Version 1 kept lost routes as not forwarded; only its forwards are kept."""
+    key = f"{DOMAIN}.{mock_config_entry.entry_id}.call_routes"
+    hass_storage[key] = {
+        "version": 1,
+        "minor_version": 1,
+        "key": key,
+        "data": {"routes": {"100": [3609, "32495000000"], "101": None}},
+    }
+    await _setup(hass, mock_config_entry)
+
+    fetched = sorted(
+        call.args[0] for call in mock_client.get_call_route.await_args_list
+    )
+    assert fetched == [101, 102, 103]
     assert _state(hass, "apiuser_forwarded_minutes_3609").state == "1.5"
 
 

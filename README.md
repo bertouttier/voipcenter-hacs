@@ -41,7 +41,11 @@ nothing.
 - **Forwarded call minutes** exists for every dialplan with a step that dials
   an external number. A forwarded call is an incoming call record without a SIP
   account, so the integration reads the call's route (`logs/calldetail`) once to
-  find which dialplan forwarded it, and keeps the result.
+  find which dialplan forwarded it, and keeps the result. PBXonline only keeps
+  routes for about 20 days, so forwards of calls from before the integration
+  ran (or from a longer Home Assistant downtime) can't be found; the
+  `unknown_route_calls` and `previous_month_unknown_route_calls` attributes
+  count those calls.
 
 Both have `calls` and `answered_calls` for this month and the totals of the
 previous month as attributes (`previous_month_minutes`, ...); the forwarded

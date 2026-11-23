@@ -261,11 +261,20 @@ class ForwardedMinutesSensor(CallMinutesSensor):
 
     @property
     def extra_state_attributes(self) -> dict[str, Any] | None:
-        """Return the call counts, plus the numbers forwarded to this month."""
+        """Return the call counts, plus the numbers forwarded to this month.
+
+        ``unknown_route_calls`` counts the calls of the month (of all dialplans)
+        whose route PBXonline no longer has, so they may be missing here.
+        """
         attributes = super().extra_state_attributes
         if attributes is None or self.coordinator.data is None:
             return attributes
-        numbers = self.coordinator.data.current.forward_numbers.get(self.item_id)
+        data = self.coordinator.data
+        attributes["unknown_route_calls"] = data.current.unknown_route_calls
+        attributes["previous_month_unknown_route_calls"] = (
+            data.previous.unknown_route_calls
+        )
+        numbers = data.current.forward_numbers.get(self.item_id)
         return {
             "dialplan_id": self.item_id,
             **attributes,

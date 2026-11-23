@@ -82,14 +82,17 @@ def _call(call_id: int, direction: str, talk: int, **extra: object) -> dict:
 
 
 # This month: 120 s outgoing (plus an unanswered try) from the office phone,
-# an incoming call answered by it, one forwarded by papa_gsm (90 s) and one
-# answered by voicemail.
+# an incoming call answered by it, one forwarded by papa_gsm (90 s), one
+# answered by voicemail, an old one whose route PBXonline no longer has and a
+# call that just ended whose route is not there yet.
 CURRENT_CALLS = [
     _call(1, "outgoing", 120, originInfo=OFFICE),
     _call(2, "outgoing", 0, originInfo=OFFICE),
     _call(3, "incoming", 300, answeredbyInfo=OFFICE),
     _call(100, "incoming", 90, answeredBy=""),
     _call(101, "incoming", 30, answeredBy=""),
+    _call(102, "incoming", 40, answeredBy=""),
+    _call(103, "incoming", 20, answeredBy=""),
 ]
 # Previous month: one 60 s outgoing call from the office phone.
 PREVIOUS_CALLS = [_call(50, "outgoing", 60, originInfo=OFFICE)]
@@ -123,8 +126,18 @@ ROUTES = {
 async def _get_cdr_between(start: int, end: int, **filters: object) -> list:
     """Return this month's calls, or the previous month's for an older window."""
     month_start = dt_util.start_of_local_day(dt_util.now().replace(day=1))
-    calls = CURRENT_CALLS if start >= month_start.timestamp() else PREVIOUS_CALLS
-    return [CallRecord.from_api(call) for call in calls]
+    if start < month_start.timestamp():
+        return [CallRecord.from_api(call) for call in PREVIOUS_CALLS]
+    now = int(dt_util.utcnow().timestamp())
+    return [
+        # Call 103 ended a minute ago.
+        CallRecord.from_api(
+            {**call, "answerTs": now - 80, "endTs": now - 60}
+            if call["ID"] == 103
+            else call
+        )
+        for call in CURRENT_CALLS
+    ]
 
 
 async def _get_call_route(call_id: int) -> list:

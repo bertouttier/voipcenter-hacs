@@ -9,5 +9,5 @@
   "issue_tracker": "https://github.com/bertouttier/voipcenter-hacs/issues",
   "loggers": ["aiovoipcenter"],
   "requirements": ["aiovoipcenter==0.4.0"],
-  "version": "2.3.0"
+  "version": "2.3.1"
 }
