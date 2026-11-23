@@ -24,9 +24,31 @@ using the VoipCenter **APIv2** and the realtime call **websocket**.
 | **In call** binary sensor | On while any conversation is ongoing. |
 | **Last call event** sensor *(websocket)* | Time of the last realtime notification; its data in the attributes. |
 | **Websocket** binary sensor *(websocket)* | Connection state of the realtime websocket. |
+| **Outgoing call minutes** sensor per SIP account | Minutes of answered outgoing calls this month. |
+| **Forwarded call minutes** sensor per forwarding dialplan | Minutes of calls a dialplan forwarded to an external number this month. |
 
 State is polled every 30 seconds. With the websocket enabled, every call
 notification also triggers an immediate refresh.
+
+### Call minutes
+
+The call minutes come from the call detail records (`logs/cdr`), read every 5
+minutes; a call is counted once it has ended. They reset at the start of every
+month and count the time from answer to hang-up, so unanswered calls add
+nothing.
+
+- **Outgoing call minutes** is on the device of each SIP account.
+- **Forwarded call minutes** exists for every dialplan with a step that dials
+  an external number. A forwarded call is an incoming call record without a SIP
+  account, so the integration reads the call's route (`logs/calldetail`) once to
+  find which dialplan forwarded it, and keeps the result.
+
+Both have `calls` and `answered_calls` for this month and the totals of the
+previous month as attributes (`previous_month_minutes`, ...); the forwarded
+sensor also lists the `numbers` it forwarded to. They use `state_class: total`
+with the start of the month as `last_reset`, so Home Assistant's long-term
+statistics keep every month: a *Statistics graph* card with `period: month` and
+`stat_types: change` shows the minutes per month.
 
 ### Services
 

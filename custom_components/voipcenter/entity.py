@@ -19,6 +19,27 @@ def _service_identifier(coordinator: VoipCenterCoordinator) -> tuple[str, str]:
     return (DOMAIN, entry.unique_id or entry.entry_id)
 
 
+def service_device_info(coordinator: VoipCenterCoordinator) -> DeviceInfo:
+    """Return the device info that links an entity to the service device."""
+    return DeviceInfo(identifiers={_service_identifier(coordinator)})
+
+
+def sip_account_device_info(
+    coordinator: VoipCenterCoordinator, item_id: int
+) -> DeviceInfo:
+    """Return the device info of a SIP account's device."""
+    account = coordinator.data.sip_accounts.get(item_id) or SipAccount()
+    name = account.logicalName or account.sipUsername or item_id
+    return DeviceInfo(
+        identifiers={(DOMAIN, f"{coordinator.config_entry.unique_id}_sip_{item_id}")},
+        name=str(name),
+        manufacturer="VoipCenter",
+        model="SIP account",
+        serial_number=account.sipUsername,
+        via_device_id=coordinator.service_device_id,
+    )
+
+
 class VoipCenterEntity(CoordinatorEntity[VoipCenterCoordinator]):
     """An entity belonging to the VoipCenter service device."""
 
@@ -85,18 +106,7 @@ class SipAccountEntity(VoipCenterItemEntity[SipAccount]):
     ) -> None:
         """Initialize the entity."""
         super().__init__(coordinator, item_id, key)
-        account = self.item
-        name = account.logicalName or account.sipUsername or item_id
-        self._attr_device_info = DeviceInfo(
-            identifiers={
-                (DOMAIN, f"{coordinator.config_entry.unique_id}_sip_{item_id}")
-            },
-            name=str(name),
-            manufacturer="VoipCenter",
-            model="SIP account",
-            serial_number=account.sipUsername,
-            via_device_id=coordinator.service_device_id,
-        )
+        self._attr_device_info = sip_account_device_info(coordinator, item_id)
 
 
 class ServiceItemEntity[ItemT: FunctionIndicator | Voicemail](
@@ -109,9 +119,7 @@ class ServiceItemEntity[ItemT: FunctionIndicator | Voicemail](
     ) -> None:
         """Initialize the entity."""
         super().__init__(coordinator, item_id, key)
-        self._attr_device_info = DeviceInfo(
-            identifiers={_service_identifier(coordinator)}
-        )
+        self._attr_device_info = service_device_info(coordinator)
         self._attr_translation_placeholders = {
             "name": str(self.item.logicalName or item_id)
         }

@@ -10,6 +10,8 @@ CONF_WS_USERNAME: Final = "ws_username"
 CONF_WS_KEY: Final = "ws_key"
 
 UPDATE_INTERVAL: Final = timedelta(seconds=30)
+# Call detail records only appear once a call has ended, so poll them slowly.
+CALL_STATS_INTERVAL: Final = timedelta(minutes=5)
 
 # Fired for every realtime "notify" message received over the websocket.
 # Same event type as version 1.x of the integration, so automations keep working.

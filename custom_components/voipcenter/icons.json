@@ -30,6 +30,12 @@
       },
       "voicemail_messages": {
         "default": "mdi:voicemail"
+      },
+      "outgoing_minutes": {
+        "default": "mdi:phone-outgoing"
+      },
+      "forwarded_minutes": {
+        "default": "mdi:phone-forward"
       }
     },
     "switch": {

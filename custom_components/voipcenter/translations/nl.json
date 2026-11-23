@@ -88,6 +88,12 @@
       },
       "voicemail_messages": {
         "name": "{name} voicemailberichten"
+      },
+      "outgoing_minutes": {
+        "name": "Uitgaande gespreksminuten"
+      },
+      "forwarded_minutes": {
+        "name": "{name} doorgeschakelde gespreksminuten"
       }
     },
     "switch": {

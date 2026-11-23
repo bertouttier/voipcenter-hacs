@@ -15,6 +15,7 @@ from homeassistant.exceptions import ConfigEntryAuthFailed
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from homeassistant.util import dt as dt_util
 
+from .call_stats import VoipCenterCallStatsCoordinator
 from .const import DOMAIN, EVENT_CALL, UPDATE_INTERVAL
 
 _LOGGER = logging.getLogger(__name__)
@@ -65,6 +66,8 @@ class VoipCenterCoordinator(DataUpdateCoordinator[VoipCenterData]):
         self._state = VoipCenterData()
         # Device registry ID of the service device, parent of the SIP accounts.
         self.service_device_id: str | None = None
+        # Monthly call minutes, polled separately and less often.
+        self.call_stats = VoipCenterCallStatsCoordinator(hass, entry, client)
 
     async def _async_update_data(self) -> VoipCenterData:
         try:

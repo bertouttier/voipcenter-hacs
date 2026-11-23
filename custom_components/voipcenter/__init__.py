@@ -59,6 +59,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: VoipCenterConfigEntry) -
         .id
     )
     entry.runtime_data = coordinator
+    # Summing a month of calls can take a while the first time; don't hold up
+    # the setup for it. The sensors become available once it is done.
+    entry.async_create_background_task(
+        hass,
+        coordinator.call_stats.async_refresh(),
+        f"{DOMAIN}_call_stats_{entry.entry_id}",
+    )
 
     options = entry.options
     if options.get(CONF_WS_USERNAME) and options.get(CONF_WS_KEY):

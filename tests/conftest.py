@@ -4,7 +4,10 @@ from collections.abc import Generator
 from unittest.mock import AsyncMock, patch
 
 from aiovoipcenter.types import (
+    CallEvent,
+    CallRecord,
     Conversation,
+    Dialplan,
     FunctionIndicator,
     SipAccount,
     Voicemail,
@@ -15,6 +18,7 @@ from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.voipcenter.const import DOMAIN
 from homeassistant.const import CONF_PASSWORD, CONF_USERNAME
+from homeassistant.util import dt as dt_util
 
 SIP_ACCOUNTS = [
     {
@@ -50,6 +54,81 @@ WEBSOCKET_USERS = [
         "isActive": True,
     }
 ]
+
+DIALPLANS = [
+    {
+        "ID": 3609,
+        "logicalName": "papa_gsm",
+        "steps": [{"step": 1, "action": "externalNumber"}],
+    },
+    {"ID": 3612, "logicalName": "menu", "steps": [{"step": 1, "action": "ivr"}]},
+]
+OFFICE = {"ID": 471, "logicalName": "Office phone", "sipUsername": "abc123"}
+TRUNK = {"ID": 1728, "did": "3220000000", "logicalName": "main"}
+
+
+def _call(call_id: int, direction: str, talk: int, **extra: object) -> dict:
+    """Return a raw CDR that started an hour after the start of its month."""
+    return {
+        "ID": call_id,
+        "callDirection": direction,
+        "status": "answered" if talk else "unanswered",
+        "isAnswered": bool(talk),
+        "answerTs": 3610 if talk else 0,
+        "endTs": 3610 + talk,
+        "handledbyInfo": TRUNK,
+        **extra,
+    }
+
+
+# This month: 120 s outgoing (plus an unanswered try) from the office phone,
+# an incoming call answered by it, one forwarded by papa_gsm (90 s) and one
+# answered by voicemail.
+CURRENT_CALLS = [
+    _call(1, "outgoing", 120, originInfo=OFFICE),
+    _call(2, "outgoing", 0, originInfo=OFFICE),
+    _call(3, "incoming", 300, answeredbyInfo=OFFICE),
+    _call(100, "incoming", 90, answeredBy=""),
+    _call(101, "incoming", 30, answeredBy=""),
+]
+# Previous month: one 60 s outgoing call from the office phone.
+PREVIOUS_CALLS = [_call(50, "outgoing", 60, originInfo=OFFICE)]
+
+
+def _route_event(event: str, name: str, value: str) -> dict:
+    return {
+        "eventType": {"event": event},
+        "eventData": {"datafield1": name, "data1": value},
+    }
+
+
+ROUTES = {
+    100: [
+        _route_event("loadDialplan", "dialplanID", "3612"),
+        _route_event("loadDialplan", "dialplanID", "3609"),
+        {
+            "eventType": {"event": "forwardToNumber"},
+            "eventData": {
+                "datafield1": "forwardAction",
+                "data1": "dialExternalNumber",
+                "datafield2": "dialedNumber",
+                "data2": "32495000000",
+            },
+        },
+    ],
+    101: [_route_event("loadDialplan", "dialplanID", "3612")],
+}
+
+
+async def _get_cdr_between(start: int, end: int, **filters: object) -> list:
+    """Return this month's calls, or the previous month's for an older window."""
+    month_start = dt_util.start_of_local_day(dt_util.now().replace(day=1))
+    calls = CURRENT_CALLS if start >= month_start.timestamp() else PREVIOUS_CALLS
+    return [CallRecord.from_api(call) for call in calls]
+
+
+async def _get_call_route(call_id: int) -> list:
+    return [CallEvent.from_api(event) for event in ROUTES.get(call_id, [])]
 
 
 @pytest.fixture(autouse=True)
@@ -87,6 +166,11 @@ def mock_client() -> Generator[AsyncMock]:
             WebsocketUser.from_api(item) for item in WEBSOCKET_USERS
         ]
         client.start_call.return_value = Conversation(ID=1234)
+        client.get_dialplans.return_value = [
+            Dialplan.from_api(item) for item in DIALPLANS
+        ]
+        client.get_cdr_between.side_effect = _get_cdr_between
+        client.get_call_route.side_effect = _get_call_route
         yield client
 
 
